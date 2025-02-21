@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
 
 
+import matplotlib.pyplot as plt
+
 class PointCollection:
     def __init__(self):
-        self.points = []
+        self.points = []  # List of (x, y) points
+        self.ax = None  # Matplotlib axis, initially None
 
     def add_point(self, x, y):
         """Add a point to the collection."""
@@ -70,7 +73,7 @@ class PointCollection:
         return x_min, y_min, x_max, y_max
 
     def get_plot(self):
-
+        """Create and return a matplotlib plot with the correct aspect ratio."""
         x_min, y_min, x_max, y_max = self.get_bounding_rectangle()
 
         # Calculate the aspect ratio
@@ -80,6 +83,7 @@ class PointCollection:
 
         # Create a figure with the same aspect ratio as the bounding rectangle
         fig, ax = plt.subplots(figsize=(8, 8 / aspect_ratio))
+
         # Set the limits of the plot to match the bounding rectangle
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
@@ -92,7 +96,16 @@ class PointCollection:
         # Ensure the aspect ratio is correct
         ax.set_aspect('equal', adjustable='box')
 
+        # Store the axis for later use
+        self.ax = ax
+
         return ax
+
+    def on_click(self, event):
+        """Handle mouse click events and print the coordinates of the clicked point."""
+        if event.inaxes == self.ax:  # Check if the click is within the plot
+            x, y = event.xdata, event.ydata
+            print(f"Clicked at: ({x:.2f}, {y:.2f})")
 
 class LineSegmentCollection:
     def __init__(self):
@@ -290,11 +303,16 @@ if __name__ == "__main__":
     shapes.add_quadrilateral(3, 4, 5, 6, segments.segments, (0, 0, 255))  # Blue quadrilateral
 
     # Plot the original data
-    ax1 = points.get_plot()
-    segments.plot_line_segments(points, ax1)
-    shapes.plot_shapes(points, segments, ax1)
-    plt.title("Original Data")
-    plt.show()
+    ax = points.get_plot()
+    segments.plot_line_segments(points, ax)
+    shapes.plot_shapes(points, segments, ax)
+    plt.title("Mosaic Design")
+
+    # Connect the mouse click event to the on_click method
+    plt.connect('button_press_event', points.on_click)
+
+    # Show the plot in a non-blocking way
+    plt.show(block=False)
 
     # Write all data to a file
     with open("mosaic.txt", "w") as file:
@@ -304,20 +322,8 @@ if __name__ == "__main__":
 
     print("Data written to 'mosaic.txt'")
 
-    # Read all data back from the file
-    points2 = PointCollection()
-    segments2 = LineSegmentCollection()
-    shapes2 = ShapeCollection()
-    with open("mosaic.txt", "r") as file:
-        points2.read_from_file(file)
-        segments2.read_from_file(file, points2.points)
-        shapes2.read_from_file(file, segments2.segments)
-
-    print("Data read from 'mosaic.txt'")
-
-    # Plot the data read from the file
-    ax2 = points2.get_plot()
-    segments2.plot_line_segments(points2, ax2)
-    shapes2.plot_shapes(points2, segments2, ax2)
-    plt.title("Data Read from File")
-    plt.show()
+    # Keep the program running to allow interaction with the plot
+    print("Click on the plot to get coordinates. Close the plot window to exit.")
+    plt.pause(0.1)  # Small pause to ensure the plot window is ready
+    while plt.get_fignums():  # Keep running while the plot window is open
+        plt.pause(0.1)
