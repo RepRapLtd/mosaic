@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 
 import matplotlib.pyplot as plt
 
@@ -7,19 +5,23 @@ class PointCollection:
     def __init__(self):
         self.points = []  # List of (x, y) points
         self.ax = None  # Matplotlib axis, initially None
+        self.box = None  # Bounding rectangle, initially None
 
     def add_point(self, x, y):
-        """Add a point to the collection."""
+        """Add a point to the collection and invalidate the bounding box."""
         self.points.append((x, y))
+        self.box = None  # Invalidate the bounding box
 
     def remove_point(self, x, y):
-        """Remove a point from the collection."""
+        """Remove a point from the collection and invalidate the bounding box."""
         self.points = [point for point in self.points if point != (x, y)]
+        self.box = None  # Invalidate the bounding box
 
     def remove_point_by_index(self, index):
-        """Remove a point by its index in the list."""
+        """Remove a point by its index in the list and invalidate the bounding box."""
         if 0 <= index < len(self.points):
             self.points.pop(index)
+            self.box = None  # Invalidate the bounding box
         else:
             raise IndexError("Index out of range")
 
@@ -33,6 +35,7 @@ class PointCollection:
     def read_from_file(self, file):
         """Read points from an already open file, checking for context strings."""
         self.points = []  # Clear existing points
+        self.box = None  # Invalidate the bounding box
 
         # Check for the starting phrase
         first_line = file.readline()
@@ -52,6 +55,9 @@ class PointCollection:
 
     def get_bounding_rectangle(self):
         """Return the bounding rectangle of all points as (x_min, y_min, x_max, y_max)."""
+        if self.box is not None:
+            return self.box  # Return cached bounding box
+
         if not self.points:
             raise ValueError("No points in the collection")
 
@@ -70,7 +76,9 @@ class PointCollection:
             if y > y_max:
                 y_max = y
 
-        return x_min, y_min, x_max, y_max
+        # Cache the bounding box
+        self.box = (x_min, y_min, x_max, y_max)
+        return self.box
 
     def get_plot(self):
         """Create and return a matplotlib plot with the correct aspect ratio."""
